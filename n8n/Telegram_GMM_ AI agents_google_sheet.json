@@ -1,0 +1,2438 @@
+{
+  "name": "Telegram_GMM_ AI agents_google_sheet",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        -464
+      ],
+      "id": "8f83b2c4-135a-44bd-8b2e-11f1e4b3d2fc",
+      "webhookId": "851beff5-556c-4788-bf72-14a4ab3f4e3f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "message": "Specify the GMM number from the list by clicking on \"Respond\" and open :",
+        "responseType": "freeText",
+        "options": {
+          "responseFormDescription": "Specify the GMM number from the list :",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3184,
+        -688
+      ],
+      "id": "0cc72b54-89f2-4ee1-9bc5-c3625e6c1dab",
+      "name": "Choice of GMM",
+      "webhookId": "5e34f65f-cdc9-4295-afc7-222e7ed60f0f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "message": "=Please enter the physical parameter values according to the following format (by clicking on \"Respond\" and open) :",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "={{$('Code3').item.json.requires.rupture+ ',' + $('Code3').item.json.requires.distance + ',' + $('Code3').item.json.requires.site }}"
+            }
+          ]
+        },
+        "options": {
+          "responseFormDescription": "Please enter the physical parameter values according to the following format :",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        832
+      ],
+      "id": "906f4b2d-7fe6-4f9c-85c1-672c655e6987",
+      "name": "Send message and wait for response1",
+      "webhookId": "9631aee9-69a5-4d3e-b785-189d2f68c4b9",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- On récupère toutes les informations nécessaires depuis les noeuds précédents ---\n\n// 1. Infos sur le GMM (module et classe)\n// Assurez-vous que le nom du noeud \"required_parameters_struct\" est correct.\nconst gmm_data = $('Code3').first().json;\nconst module_name = gmm_data.module;\nconst class_name = gmm_data.class_name;\nconst requires = gmm_data.requires;\n\n// 2. On reconstruit la chaîne de clés\nconst keys_array = [...requires.rupture, ...requires.distance, ...requires.site];\nconst keys_string = keys_array.join(',');\n\n// 3. On récupère la réponse de l'utilisateur\n// Assurez-vous que le nom du noeud \"Send message and wait for response1\" est correct.\nconst user_response_data = $('Send message and wait for response1').first().json.data;\n// On récupère dynamiquement la chaîne de valeurs\nconst values_string = Object.values(user_response_data)[0];\n\n// --- On construit la commande finale, étape par étape ---\n\n// On commence avec la base de la commande\nlet command = \"python3 /app/oq-wrappers/run_gmm_calculation_v8.py\";\n\n// On ajoute chaque argument l'un après l'autre\ncommand += ` --module ${module_name}`;\ncommand += ` --class_name ${class_name}`;\ncommand += ` --keys \"${keys_string}\"`;\ncommand += ` --values \"${values_string}\"`;\n\n// --- On retourne la commande complète ---\n\nreturn [\n  {\n    json: {\n      final_command: command\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        784
+      ],
+      "id": "c127efa6-dd30-4cd7-9ba2-de02c09a252d",
+      "name": "Prepare Final Command1"
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "={{ $('Prepare Final Command1').item.json.final_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3808,
+        1040
+      ],
+      "id": "c6de67f1-2d82-45da-8b5c-f7775d7bf681",
+      "name": "Run Final Calculation1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.final_report }}\n",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4400,
+        1504
+      ],
+      "id": "524e0130-9334-4355-a117-51e78f9a6780",
+      "name": "Send a text message1",
+      "webhookId": "d81aa26d-b62d-4fe2-8091-77737f0edc98",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code1 : Agrégateur de Rapports (Avec Uniquement la Logique de Résumé)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LES DONNÉES DE MANIÈRE SÉCURISÉE ---\n\nconst calcData = $('Run Final Calculation1').first()?.json;\nconst interpretationText = $input.first()?.json.response || \"\";\n\nif (!calcData || !calcData.stdout) {\n  throw new Error(\"Les données du noeud 'Run Final Calculation1' sont manquantes ou invalides.\");\n}\nconst result = JSON.parse(calcData.stdout);\n\n// --- ÉTAPE 2: CONSTRUIRE LE RAPPORT TEXTUEL DE MANIÈRE DÉFENSIVE ---\n// Le formatage initial (sans Markdown) est conservé.\nlet message = `🏗️ GMM_class Calculation: ${result.gmm || 'N/A'}\\n\\n`;\nmessage += `📊 Abstract:\\n`;\nmessage += `• Module: ${result.module || 'N/A'}\\n`;\n\n// Récupération des Physical Parameters (logique inchangée)\ntry {\n  const finalCommandData = $('Prepare Final Command1').first()?.json?.final_command;\n  if (finalCommandData && typeof finalCommandData === 'string') {\n    message += '• Physical Parameters:\\n';\n    const keysMatch = finalCommandData.match(/--keys\\s+\"([^\"]+)\"/);\n    const valuesMatch = finalCommandData.match(/--values\\s+\"([^\"]+)\"/);\n    if (keysMatch && valuesMatch) {\n      const keys = keysMatch[1].split(',').map(k => k.trim());\n      const values = valuesMatch[1].split(',').map(v => v.trim());\n      if (keys.length === values.length) {\n        for (let i = 0; i < keys.length; i++) {\n          message += `  - ${keys[i]} = ${values[i]}\\n`;\n        }\n      }\n    }\n  }\n} catch (e) {\n  message += '• Physical Parameters: (error parsing final_command)\\n';\n}\n\nmessage += `• Numbers of IMs supported by model: ${result.successful_imts_count || 0}/${result.total_imts_tested || 0}\\n`;\n\nconst imtResults = result.imt_results || [];\n\n// =======================================================================\n// === MODIFICATION : LOGIQUE DE RÉSUMÉ INTELLIGENT APPLIQUÉE ICI ===\n// =======================================================================\n\n// 1. D'abord, on sépare les IMTs scalaires des IMTs spectraux\nconst spectralTypes = ['SA', 'SDi', 'EAS', 'FAS', 'DRVT', 'AvgSA', 'VHR_SA'];\nconst scalarImts = imtResults.filter(r => !spectralTypes.includes(r.imt) && r.success);\n\n// On affiche les IMTs scalaires (PGA, PGV, etc.), qui sont toujours peu nombreux.\nif (scalarImts.length > 0) {\n    message += `\\n📈 Base IMTs (successful):\\n`;\n    scalarImts.forEach(imt => {\n        const meanValue = parseFloat(imt.mean_value).toFixed(4);\n        const stdDev = parseFloat(imt.stddev_total_ln).toFixed(4);\n        const unit = imt.unit || '';\n        message += `• ${imt.display_name}: ${meanValue}${unit} (σ=${stdDev})\\n`;\n    });\n}\n\n// 2. Ensuite, on crée un résumé pour le PREMIER type spectral trouvé\nlet summaryCreated = false;\nfor (const type of spectralTypes) {\n    const spectralResults = imtResults.filter(r => r.imt === type && r.success);\n\n    if (spectralResults.length > 0 && !summaryCreated) {\n        message += `\\n🌊 ${type} Spectrum Summary (Sampled Values):\\n`;\n        \n        const sortKey = ['SA', 'SDi', 'AvgSA', 'VHR_SA'].includes(type) ? 'sa_period' : 'frequency';\n        spectralResults.sort((a, b) => a[sortKey] - b[sortKey]);\n\n        let sampledResults = [];\n        const count = spectralResults.length;\n\n        if (count <= 9) {\n            // Si on a 9 valeurs ou moins, on les prend toutes\n            sampledResults = spectralResults;\n        } else {\n            // Sinon, on prend les 3 premières, les 3 du milieu, et les 3 dernières\n            const middleIndex = Math.floor(count / 2) - 1;\n            sampledResults = [\n                ...spectralResults.slice(0, 3),\n                ...spectralResults.slice(middleIndex, middleIndex + 3),\n                ...spectralResults.slice(-3)\n            ];\n            // On s'assure qu'il n'y a pas de doublons\n            sampledResults = [...new Map(sampledResults.map(item => [item.display_name, item])).values()];\n        }\n        \n        sampledResults.forEach(item => {\n            const meanValue = parseFloat(item.mean_value).toFixed(5);\n            const stdDev = parseFloat(item.stddev_total_ln).toFixed(4);\n            const unit = item.unit || '';\n            message += `• ${item.display_name}: ${meanValue}${unit} (σ=${stdDev})\\n`;\n        });\n\n        summaryCreated = true; // On a créé un résumé, on arrête la boucle.\n    }\n}\n// =======================================================================\n// === FIN DE LA MODIFICATION ===\n// =======================================================================\n\nmessage += '\\n';\n\nif (result.failed_imts_count > 0) {\n    message += `⚠️ ${result.failed_imts_count} IMTs not supported.\\n\\n`;\n}\n\n// --- ÉTAPE 3: RETOURNER TOUTES LES DONNÉES AGRÉGÉES ---\nreturn [{\n    json: {\n        final_report: message,\n        interpretation_text: interpretationText,\n        has_plot: !!result.plot_path,\n        plot_path: result.plot_path || null,\n        sa_count: imtResults.filter(r => r.imt === 'SA').length,\n        sdi_count: imtResults.filter(r => r.imt === 'SDi').length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4064,
+        1184
+      ],
+      "id": "e16371d6-aa10-45bc-a86b-4ca2778de72a",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1898443251,
+          "mode": "list",
+          "cachedResultName": "REQUIRES_IMTs_desc_units",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4/edit#gid=1898443251"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -368,
+        -464
+      ],
+      "id": "719b35b8-7cfd-4529-952d-997d15b217b8",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wPxE5VAtJAOFnobz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code2 : Formate la PREMIÈRE partie de la liste des GMMs (1-150)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LA LISTE FILTRÉE ---\n// On lit la sortie du nœud 'Code22' qui contient la VRAIE liste des items filtrés.\n// !! Assurez-vous que le nom 'Code22' est correct !!\nconst allFilteredItems = $('Code22').all();\n\n// --- ÉTAPE 2: SÉLECTIONNER LA PREMIÈRE PARTIE (les 150 premiers) ---\n// .slice(0, 150) prend les éléments de l'index 0 jusqu'à 149 (soit 150 éléments).\nconst firstBatch = allFilteredItems.slice(0, 100);\n\n// --- ÉTAPE 3: FORMATER LE MESSAGE ---\nconst title = `*Here is the list of GMMs available in OpenQuake *\\n`;\nconst messageLines = [];\n\n// Expression régulière pour \"échapper\" les caractères spéciaux de Markdown V2\nconst specialChars = /[_*[\\]()~`>#+\\-=|{}.!]/g;\n\n// On boucle sur la PREMIÈRE PARTIE de la liste (les 150 items)\nfirstBatch.forEach((item, index) => {\n  // Le numéro de la ligne doit être l'index + 1\n  const newRowNumber = index + 1;\n  \n  // On récupère le nom de la classe et on échappe les caractères spéciaux\n  const className = (item.json.class_name || 'Unknown GMM').replace(specialChars, '\\\\$&');\n  \n  // On ajoute la ligne formatée au tableau\n  messageLines.push(`${newRowNumber}) ${className}`);\n});\n\n// On assemble le titre et les lignes du message.\nconst finalMessage = title + '\\n' + messageLines.join('\\n');\n\n// --- ÉTAPE 4: RETOURNER LE PREMIER MESSAGE ---\n// On retourne un seul item, contenant le message complet.\nreturn [{\n  json: {\n    telegramMessage: finalMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        -896
+      ],
+      "id": "a1252f47-240c-4dfc-a2fb-3fbaf56059a1",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CE SCRIPT FAIT TROIS CHOSES ---\n// 1. Il récupère la liste filtrée que l'utilisateur a vue (depuis Code22).\n// 2. Il utilise le numéro choisi par l'utilisateur pour trouver le VRAI nom de la classe.\n// 3. Il cherche ce nom dans la feuille de calcul complète pour extraire et formater les données.\n\n// --- ÉTAPE 1: Récupérer toutes les informations nécessaires ---\n\n// Récupère la LISTE FILTRÉE des items depuis le nœud qui l'a créée.\n// !! IMPORTANT !! Assurez-vous que le nom du nœud est bien 'Code22'.\nconst filteredItemsFromCode22 = $('Code22').all();\n\n// Récupère TOUS les items (519 lignes) du noeud Google Sheet.\nconst allModules = $('Get row(s) in sheet3').all();\n\n// Récupère le NUMÉRO que l'utilisateur a choisi (ex: \"1\", \"2\", etc.).\nconst choiceNodeOutput = $('Choice of GMM').first().json;\nconst selectedNumber = parseInt(choiceNodeOutput.data.text, 10);\n\n// Vérifications de sécurité.\nif (isNaN(selectedNumber)) {\n    return [{ json: { error: \"Impossible de lire le numéro du module choisi.\" } }];\n}\nif (!filteredItemsFromCode22 || filteredItemsFromCode22.length === 0) {\n    return [{ json: { error: \"Impossible de récupérer la liste filtrée depuis le nœud 'Code22'.\" } }];\n}\n\n// --- ÉTAPE 2: Trouver le nom de la classe correspondant au numéro choisi ---\n\nconst selectedIndex = selectedNumber - 1;\n\n// Autre vérification : le numéro est-il valide par rapport à la taille de la liste ?\nif (selectedIndex < 0 || selectedIndex >= filteredItemsFromCode22.length) {\n    return [{ json: { error: `Le numéro choisi '${selectedNumber}' est invalide pour la liste de ${filteredItemsFromCode22.length} options.` } }];\n}\n\n// On extrait le nom de la classe de la liste filtrée.\nconst selectedClassName = filteredItemsFromCode22[selectedIndex].json.class_name;\n\n\n// --- ÉTAPE 3: Trouver la ligne complète dans la feuille de calcul ---\n\nconst selectedModuleItem = allModules.find(item => item.json.class_name === selectedClassName);\n\nif (!selectedModuleItem) {\n    return [{ json: { error: `Impossible de trouver les détails pour la classe nommée \"${selectedClassName}\" dans la feuille de calcul.` } }];\n}\n\nconst selectedModuleData = selectedModuleItem.json;\n\n\n// --- ÉTAPE 4: Formater la sortie en utilisant votre logique ---\n\n// Crée le nouvel objet JSON structuré en sortie.\nconst structuredOutput = {\n  module: selectedModuleData.module,\n  class_name: selectedModuleData.class_name,\n  requires: {\n    site: [],\n    rupture: [],\n    distance: []\n  },\n  supported_imts: []\n};\n\n// Peuple les listes de paramètres requis ET des IMTs.\nfor (const key in selectedModuleData) {\n  const value = selectedModuleData[key];\n  \n  if (value && typeof value === 'string' && value.trim() !== \"\") {\n    if (key.startsWith('site.')) {\n      structuredOutput.requires.site.push(value.trim());\n    } else if (key.startsWith('rupture.')) {\n      structuredOutput.requires.rupture.push(value.trim());\n    } else if (key.startsWith('distance.')) {\n      structuredOutput.requires.distance.push(value.trim());\n    } else if (key.startsWith('supported_imts.')) {\n      structuredOutput.supported_imts.push(value.trim());\n    }\n  }\n}\n\n// Crée une liste simple de tous les paramètres requis.\nconst requiredParamsList = [\n    ...structuredOutput.requires.site, \n    ...structuredOutput.requires.rupture, \n    ...structuredOutput.requires.distance\n];\n\n// Stocke le nombre de paramètres attendus.\nconst expectedParamCount = requiredParamsList.length;\n\n// Crée le message à envoyer à l'utilisateur.\nconst promptForUser = `\nPlease enter the ${expectedParamCount} physical parameter values according to the following format:\n**${requiredParamsList.join(',')}**\n\nReply to this message with the values separated by commas (e.g., 760,10,6.5,50).\n`;\n\n// Ajoute ces nouvelles informations à notre objet de sortie.\nstructuredOutput.required_params_list = requiredParamsList;\nstructuredOutput.expected_param_count = expectedParamCount;\nstructuredOutput.prompt_for_user = promptForUser.trim();\n\n// Retourne l'objet JSON unique et bien structuré.\nreturn [{ \n  json: structuredOutput \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4160,
+        -672
+      ],
+      "id": "94ee1f97-e343-4f41-884b-d9b8e6dfb3e5",
+      "name": "Code3",
+      "executeOnce": false,
+      "retryOnFail": false,
+      "notesInFlow": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $('Code4').item.json.info_documentation }}\n\nHere are the physical parameters (inputs) of the {{ $('Code3').item.json.module }} model of the {{ $('Code3').item.json.class_name }} class:\n\nRupture: {{ $('Code3').item.json.requires.rupture }}\nDistance: {{ $('Code3').item.json.requires.distance }}\nSite : {{ $('Code3').item.json.requires.site }}\n",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "=none"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        832
+      ],
+      "id": "9a7d0130-79a5-4cb2-a266-06f1d7a48ea8",
+      "name": "Send a text message3",
+      "webhookId": "8d278981-e8c3-4200-829a-c4e43631c1f4",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Input attendu : {{$json.text}}  (string) ---\nconst txt =  $('Send a text message3').first().json.result.text  // <- utilise la vraie entrée\n\nconst extract = (block) => {\n  const regex = new RegExp(`\\\\*${block} Parameters\\\\*:\\\\n([\\\\s\\\\S]*?)(?=\\\\n\\\\*|$)`, 'i');\n  const m = txt.match(regex);\n  if (!m) return [];\n  return m[1]\n    .split('\\n')\n    .map(l => l.match(/:\\s*([^\\s`]+)/)?.[1])\n    .filter(Boolean);\n};\n\nconst out = [\n  ...extract('Rupture'),\n  ...extract('Distance'),\n  ...extract('Site')\n].join(', ');\n\nreturn { required: out };   // ← objet minimal attendu par le workflow"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        832
+      ],
+      "id": "1fd3afd9-d704-41c9-8b82-ebfa0e7b84fb",
+      "name": "required_parameters_struct"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 120469701,
+          "mode": "list",
+          "cachedResultName": "info.documentation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4/edit#gid=120469701"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "module",
+              "lookupValue": "={{ $json.module }}"
+            },
+            {
+              "lookupColumn": "class_name",
+              "lookupValue": "={{ $json.class_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4352,
+        -448
+      ],
+      "id": "d48e5bca-2a98-43bc-ba5f-968cc624c3e7",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wPxE5VAtJAOFnobz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Grab the documentation string\nconst doc = $input.first().json['info.documentation'] || '';\n\n// Return it in the required array-of-objects form\nreturn [{ json: { info_documentation: doc } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4608,
+        -448
+      ],
+      "id": "b9dca909-d1b4-468a-9f2e-3f5ef5c57895",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code5 : Constructeur de la page HTML (Version Finale et Complète)\n// =======================================================================\n\nconst fs = require('fs');\n\n// --- CONFIGURATION DE L'ENTÊTE ---\nconst AUTHOR_NAME = \"Pr. Boumédiène DERRAS\"; \nconst PROJECT_TITLE = \"Advanced Seismic Analysis Project\";\n\n// --- PARTIE 1: RÉCUPÉRATION DE TOUTES LES DONNÉES ---\nconst mergedData = $input.first().json;\n\n// On récupère chaque pièce du puzzle depuis les données d'entrée\nconst reportText = mergedData.final_report;\nconst interpretationText = mergedData.interpretation_text;\nconst sourceImagePath = mergedData.plot_path;\nconst definitionsHtml = mergedData.formatted_text; \n\n// On va chercher la description du modèle depuis le noeud Code4\nconst documentationData = $('Code4').first()?.json;\nconst modelDescriptionRaw = documentationData?.info_documentation || 'No model description provided.';\n\n// --- CORRECTION : GESTION INTELLIGENTE DES PARAGRAPHES POUR LA DESCRIPTION ---\n// 1. On divise le texte en blocs à chaque double saut de ligne\nconst paragraphs = modelDescriptionRaw.split(/\\n\\s*\\n/);\n// 2. On enveloppe chaque bloc dans une balise <p> et on remplace les sauts de ligne simples par un espace\nconst modelDescription = paragraphs.map(p => `<p class=\"description\">${p.replace(/\\n/g, ' ')}</p>`).join('');\n\n\n// --- PARTIE 2: GESTION DE L'IMAGE ---\n// const finalImageName = `response_spectrum_${Date.now()}.png`;\nconst finalImageName = `response_spectrum.png`;\nconst destinationImagePath = `/app/oq-wrappers/${finalImageName}`;\nlet imageHtml = ''; \n\nif (sourceImagePath) {\n  try {\n    fs.copyFileSync(sourceImagePath, destinationImagePath);\n    imageHtml = `<img src=\"${finalImageName}\" alt=\"Response Spectrum Plot\" style=\"max-width: 100%; height: auto; margin-top: 20px;\" />`;\n  } catch (error) {\n    console.log(`Error copying image: ${error.message}`);\n    imageHtml = '<p><em>Error: The plot could not be loaded.</em></p>';\n  }\n} else {\n    imageHtml = '<p><em>(No plot was generated for this calculation.)</em></p>';\n}\n\n// --- PARTIE 3: CONSTRUCTION DU HTML FINAL ---\nconst currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });\nconst aiCreditText1 = `<p class=\"ai-credit\">This interpretation was generated by a Gemini 2.0 Flash AI agent and should be reviewed by a qualified expert.</p>`;\nconst aiCreditText2 = `<p class=\"ai-credit\">This definitions was generated by a Gemini 2.0 Flash AI agent and should be reviewed by a qualified expert.</p>`;\n\nconst finalHtml = `\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Seismic Analysis Report</title>\n    <style>\n      body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.5; max-width: 800px; margin: auto; color: #333; }\n      .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #004a99; padding-bottom: 20px; margin-bottom: 40px; }\n      .header-left { max-width: 75%; }\n      .header h1 { margin: 0; font-size: 24pt; color: #004a99; }\n      .header .subtitle { margin: 5px 0 0 0; font-size: 14pt; color: #555; font-weight: normal; }\n      .header .author-info { margin-top: 20px; font-size: 10pt; color: #666; }\n      .header-right { text-align: right; }\n      .logo { max-height: 80px; }\n      h2 { font-size: 16pt; color: #444; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px; page-break-after: avoid; }\n      \n      /* Style pour tous les paragraphes de texte justifiés */\n      p.description, div.description, div.description_definitions { \n        text-align: justify; \n        color: #555; \n      }\n      \n      pre { white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace; font-size: 9pt; background-color: #f4f4f4; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }\n      .appendix { page-break-before: always; }\n      .ai-credit { text-align: right; font-size: 8pt; font-style: italic; color: #999; margin-top: 15px; }\n      @page { size: A4; margin: 2.5cm; @bottom-center { content: \"Page \" counter(page) \" of \" counter(pages); font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #888; } }\n    </style>\n  </head>\n  <body>\n\n    <header class=\"header\">\n      <div class=\"header-left\">\n        <h1>Seismic Analysis Report</h1>\n        <p class=\"subtitle\">${PROJECT_TITLE}</p>\n        <p class=\"author-info\">Prepared by: ${AUTHOR_NAME}<br/>Date: ${currentDate}</p>\n      </div>\n      <div class=\"header-right\">\n        <img src=\"/app/oq-wrappers/logo.png\" alt=\"Logo\" class=\"logo\" />\n      </div>\n    </header>\n\n    <h2>Model Description</h2>\n    ${modelDescription}\n\n    <h2>Textual Calculation Results</h2>\n    <pre>${reportText}</pre>\n    \n    <h2>Response Spectrum Plot</h2>\n    ${imageHtml}\n\n    ${interpretationText ? `\n      <h2>AI-Powered Interpretation</h2>\n      <div class=\"description\">${interpretationText.replace(/\\n/g, '<br>')}</div>\n      ${aiCreditText1}\n    ` : ''}\n\n    <div class=\"appendix\">\n        <h2>Appendix: Term Definitions</h2>\n        <div class=\"description_definitions\">${definitionsHtml.replace(/\\n/g, '<br>')}</div>\n        ${aiCreditText2}\n    </div>\n    \n  </body>\n</html>\n`;\n\n// --- PARTIE 4: RETOUR ---\nreturn [{\n  json: {\n    ...mergedData,\n    report_html: finalHtml\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5728,
+        1040
+      ],
+      "id": "8d73960d-96b1-48d6-9fc2-61d7935c502e",
+      "name": "Code5"
+    },
+    {
+      "parameters": {
+        "command": "=weasyprint \"{{ $json.temp_html_path }}\" \"{{ $json.final_pdf_path }}\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        6080,
+        1040
+      ],
+      "id": "ff2086dd-db14-4120-bcde-8d9bae0e50f6",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\n\n// ON VA CHERCHER LE CONTENU HTML DIRECTEMENT DANS LE NOEUD \"Code5\"\nconst htmlContent = $('Code5').first().json.report_html;\n\n// =======================================================================\n// MODIFICATION : Définir les chemins de fichiers FIXES\n// On a supprimé la variable \"timestamp\" pour que les noms soient toujours les mêmes.\n// =======================================================================\nconst tempHtmlPath = '/app/oq-wrappers/temp_report.html';\nconst finalPdfPath = '/app/oq-wrappers/final_report.pdf';\n\n//const timestamp = Date.now();\n//const tempHtmlPath = `/app/oq-wrappers/temp_report_${timestamp}.html`;\n//const finalPdfPath = `/app/oq-wrappers/final_report_${timestamp}.pdf`;\n\n// On vérifie que le contenu n'est pas vide avant d'écrire\nif (htmlContent) {\n  // fs.writeFileSync() va automatiquement écraser le fichier temp_report.html précédent.\n  fs.writeFileSync(tempHtmlPath, htmlContent);\n}\n\n// On retourne les chemins de fichiers fixes pour que les noeuds suivants puissent les utiliser\nreturn [{\n  json: {\n    ...$input.first().json, // On passe les données d'entrée (de l'IA) au noeud suivant\n    temp_html_path: tempHtmlPath,\n    final_pdf_path: finalPdfPath \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5920,
+        1040
+      ],
+      "id": "303f1326-6bb1-445d-b340-e07099b6a798",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        6736,
+        528
+      ],
+      "id": "11de6994-24e5-4a8d-b8aa-87f1e2eb7eda",
+      "name": "Send a document",
+      "webhookId": "1494fd77-ed95-4d7e-90cb-cb36bb9b9c3c",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Code6').item.json.final_pdf_path }}",
+        "options": {
+          "fileExtension": "",
+          "fileName": "=final_report_{{ $('Code3').item.json.class_name }}.pdf",
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        6272,
+        976
+      ],
+      "id": "888a01dd-cc49-4d3d-9a70-0a1dd180cf2d",
+      "name": "Read/Write Files from Disk",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eacd4c89-e463-43fe-8142-fe377271d6e8",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "=SA",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "5db37010-db0f-4c92-8af0-030bd4ffdfaf",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "SDi",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "3ab8d32f-bfc1-4d1f-b88d-d3e5774192c6",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "FAS",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "b2e873c4-4c3c-4cc3-9b07-4496aeefea16",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "EAS",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "9e341613-1e72-4ade-898c-c02075e06e9e",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "VHR_SA",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "e75ec462-2d76-462e-aa82-e5eadf8df0eb",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "=AvgSA",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "2574f1ef-2be7-4ae7-b96d-1a5426a77cdc",
+              "leftValue": "={{ $('Code3').item.json.supported_imts }}",
+              "rightValue": "DRVT",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3312,
+        1168
+      ],
+      "id": "e2836880-c091-4fb4-9ed3-a0556d2a2d26",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "binaryData": true,
+        "binaryPropertyName": "photo",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4512,
+        1184
+      ],
+      "id": "ec68330e-7859-41ee-8a8e-fcb3b40a3754",
+      "name": "Send a photo message",
+      "webhookId": "b043c2a2-abdb-4106-8728-a0e8db2de1b8",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// On a besoin du module 'fs' (file-system) pour lire le fichier depuis le disque\nconst fs = require('fs');\n\n// --- ÉTAPE 1: Récupérer le chemin du fichier depuis l'entrée ---\n// On récupère le chemin complet du fichier (ex: /tmp/sdi_spectrum.png)\nconst filePath = $input.first().json.plot_path;\n\n// Sécurité : On vérifie que le chemin existe avant de continuer\nif (!filePath) {\n  throw new Error(\"La propriété 'plot_path' est manquante dans les données d'entrée.\");\n}\n\n// --- ÉTAPE 2: Extraire le nom du fichier (la partie dynamique) ---\n// On coupe la chaîne de caractères à chaque '/' et on prend le dernier élément.\n// C'est la méthode la plus simple pour extraire un nom de fichier d'un chemin.\nconst fileName = filePath.split('/').pop();\n\n// --- ÉTAPE 3: Lire le fichier et le retourner en tant que donnée binaire ---\ntry {\n  // Lit le contenu du fichier image en tant que buffer binaire\n  const fileBuffer = fs.readFileSync(filePath);\n\n  // On retourne les données. L'objet 'binary' est ce que n8n utilise pour les fichiers.\n  return [{\n    json: {\n      ...$input.first().json, // On conserve les données d'entrée (final_report, etc.)\n      file_size: fileBuffer.length // On ajoute la taille du fichier pour information\n    },\n    binary: {\n      // Le nom de la propriété ici ('photo') est celui que vous utiliserez dans les noeuds suivants\n      photo: {\n        data: fileBuffer,\n        mimeType: 'image/png',\n        // MODIFICATION : On utilise notre variable dynamique ici !\n        fileName: fileName\n      }\n    }\n  }];\n\n} catch (error) {\n  // Si le fichier n'existe pas ou ne peut pas être lu, on génère une erreur claire.\n  throw new Error(`Impossible de lire le fichier ${filePath}: ${error.message}`);\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4288,
+        1184
+      ],
+      "id": "670dee8d-9105-4777-a3a5-7fee05ad471e",
+      "name": "Code7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD \"Assemble Report\" (le noeud Code après AI Agent)\n// =======================================================================\n// --- ÉTAPE 1: RÉCUPÉRER LES DONNÉES AUX BONNES SOURCES ---\n// On récupère les résultats du calcul DEPUIS LE NOEUD Code7\nconst calculationResult = $('Code7').first().json;\n// On récupère l'interprétation de l'IA DEPUIS L'ENTRÉE DIRECTE de ce noeud\nconst interpretationResult = $input.first().json.candidates[0].content.parts[0].text;\n// --- ÉTAPE 2: EXTRAIRE LES INFORMATIONS UTILES ---\n// On s'assure que les variables existent, sinon on met une valeur par défaut\nconst reportText = calculationResult.final_report || \"Calculation report not found.\";\nconst plotPath = calculationResult.plot_path || null;\nconst interpretationText = interpretationResult || \"AI interpretation not available.\";\n// --- ÉTAPE 3: RETOURNER UN OBJET STRUCTURÉ POUR LE NOEUD Code5 ---\n// On retourne toutes les pièces séparément pour que Code5 puisse les utiliser.\nreturn [{\njson: {\nfinal_report: reportText,\nplot_path: plotPath,\ninterpretation_text: interpretationText\n}\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5296,
+        1104
+      ],
+      "id": "a714caf0-ac52-4851-ac03-c7a393902644",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5104,
+        1184
+      ],
+      "id": "a753d49d-19f4-4e16-8cfc-85f531d4a55a",
+      "name": "HTTP Request1",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "notesInFlow": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Nsa5k408T4t6cfNX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "⚠️ The AI analysis service (Gemini) is temporarily overloaded. The main calculation was successful, but the AI-powered sections (interpretation) could not be generated at this time. Please try again later"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code8 : Générateur de Requête Complète pour Gemini\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER ET PARSER LES DONNÉES ---\nconst nodeData = $('Run Final Calculation1').item.json;\nlet seismicData;\ntry {\n  seismicData = JSON.parse(nodeData.stdout);\n} catch (error) {\n  throw new Error(`Erreur lors du parsing du JSON depuis stdout: ${error.message}`);\n}\n\n// --- ÉTAPE 2: DÉTECTER LE TYPE DE DONNÉES ET SIMPLIFIER ---\nconst imtResults = seismicData.imt_results || [];\nconst saResults = imtResults.filter(r => r.imt === 'SA' && r.success);\nconst sdiResults = imtResults.filter(r => r.imt === 'SDi' && r.success);\n\nlet spectralType = 'None';\nlet spectralResults = [];\nif (saResults.length > 0) {\n    spectralType = 'SA';\n    spectralResults = saResults;\n} else if (sdiResults.length > 0) {\n    spectralType = 'SDi';\n    spectralResults = sdiResults;\n}\n\n// --- ÉTAPE 3: FORMATER LES DONNÉES DE MANIÈRE ULTRA-SIMPLE ---\nconst dataForPrompt = spectralResults.map(item =>\n    `${item.display_name} -> ${item.imt === 'SA' ? 'Acceleration' : 'Displacement'}: ${item.mean_value.toFixed(4)} ${item.unit}`\n).join('\\n');\n\n\n// --- ÉTAPE 4: CRÉER LE TEXTE DU PROMPT (la variable s'appelle maintenant \"promptText\") ---\nlet promptText = \"\";\nconst gmmName = seismicData.gmm;\n\nif (spectralType === 'SA') {\n    promptText = `\nYou are an earthquake engineering expert. Your task is to interpret **SPECTRAL ACCELERATION (SA)** data.\n**IMPORTANT: The data provided is ACCELERATION in units of 'g'. Do NOT mention displacement.**\n\n**GMM:** ${gmmName}\n\n**Data to Analyze:**\n\\`\\`\\`\n${dataForPrompt}\n\\`\\`\\`\n\n**Your Task:**\nBased strictly on the data, provide an analysis following these exact steps. Use the term \"spectral acceleration\" in your response.\n1.Overall Summary: One-sentence summary of the seismic hazard level.\n2.Peak Acceleration: State the peak spectral acceleration and its period.\n3.Short-Period Structures: Implications for rigid buildings.\n4.Long-Period Structures: Implications for flexible buildings.\n\n**Begin your response exactly like this:**\n\"Here is the interpretation of the **Spectral Acceleration (SA)** data:\"\n`;\n} else if (spectralType === 'SDi') {\n    promptText = `\nYou are an earthquake engineering expert. Your task is to interpret **INELASTIC SPECTRAL DISPLACEMENT (SDi)** data.\n**IMPORTANT: The data provided is DISPLACEMENT in units of 'cm'. Do NOT mention acceleration.** 'R' is the strength ratio.\n\n**GMM:** ${gmmName}\n\n**Data to Analyze:**\n\\`\\`\\`\n${dataForPrompt}\n\\`\\`\\`\n\n**Your Task:**\nBased strictly on the data, provide an analysis following these exact steps. Use the term \"inelastic displacement\" in your response.\n1.  **Overall Summary:** One-sentence summary of the inelastic displacement demand.\n2.  **Peak Displacement:** State the peak inelastic displacement and its period for a key strength ratio (e.g., R=3 or R=4).\n3.  **Effect of Strength (R):** How does displacement change as 'R' increases?\n4.  **Long-Period Structures:** Implications for flexible structures designed for ductility.\n\n**Begin your response exactly like this:**\n\"Here is the interpretation of the **Inelastic Spectral Displacement (SDi)** data:\"\n`;\n} else {\n    promptText = `The calculation for GMM ${gmmName} did not produce any spectral results (SA or SDi). Please summarize the available base parameters from the following data: \\n\\n ${JSON.stringify(imtResults, null, 2)}`;\n}\n\n// =======================================================================\n// --- ÉTAPE 5: RETOURNER L'OBJET FINAL COMPLET, PRÊT À ÊTRE ENVOYÉ ---\n// =======================================================================\n// Cette structure correspond EXACTEMENT à ce que l'API Gemini attend.\nreturn {\n  json: {\n    \"contents\": [\n      {\n        \"parts\": [\n          {\n            \"text\": promptText // La clé est bien \"text\" ici\n          }\n        ]\n      }\n    ]\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        1184
+      ],
+      "id": "4ab3adcc-726c-4efa-99aa-6dbe0ef13372",
+      "name": "Code8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code9 : Constructeur de la page HTML (Cas SANS Graphique ni Interprétation)\n// =======================================================================\n\n// --- CONFIGURATION DE L'ENTÊTE ---\nconst AUTHOR_NAME = \"Pr. Boumédiène DERRAS\"; \nconst PROJECT_TITLE = \"Advanced Seismic Analysis Project\";\n\n// --- PARTIE 1: RÉCUPÉRATION DES DONNÉES DISPONIBLES ---\nconst mergedData = $input.first().json;\n\n// On récupère les pièces du puzzle qui existent dans cette branche\nconst reportText = mergedData.final_report;\nconst definitionsHtml = mergedData.formatted_text; \n\n// On va chercher la description du modèle depuis le noeud Code4\nconst documentationData = $('Code4').first()?.json;\nconst modelDescriptionRaw = documentationData?.info_documentation || 'No model description provided.';\nconst paragraphs = modelDescriptionRaw.split(/\\n\\s*\\n/);\nconst modelDescription = paragraphs.map(p => `<p class=\"description\">${p.replace(/\\n/g, ' ')}</p>`).join('');\n\n\n// --- PARTIE 2: CONSTRUCTION DU HTML FINAL ---\nconst currentDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });\nconst aiCreditText = `<p class=\"ai-credit\">This definitions section was generated by a Gemini 2.0 Flash AI agent...</p>`;\n\nconst finalHtml = `\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Seismic Analysis Report</title>\n    <style>\n      body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.5; max-width: 800px; margin: auto; color: #333; }\n      .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #004a99; padding-bottom: 20px; margin-bottom: 40px; }\n      .header-left { max-width: 75%; }\n      .header h1 { margin: 0; font-size: 24pt; color: #004a99; }\n      .header .subtitle { margin: 5px 0 0 0; font-size: 14pt; color: #555; font-weight: normal; }\n      .header .author-info { margin-top: 20px; font-size: 10pt; color: #666; }\n      .header-right { text-align: right; }\n      .logo { max-height: 80px; }\n      h2 { font-size: 16pt; color: #444; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px; page-break-after: avoid; }\n      p.description, div.description, div.description_definitions { text-align: justify; color: #555; }\n      pre { white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace; font-size: 9pt; background-color: #f4f4f4; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }\n      .appendix { page-break-before: always; }\n      .ai-credit { text-align: right; font-size: 8pt; font-style: italic; color: #999; margin-top: 15px; }\n      @page { size: A4; margin: 2.5cm; @bottom-center { content: \"Page \" counter(page) \" of \" counter(pages); font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #888; } }\n    </style>\n  </head>\n  <body>\n\n    <header class=\"header\">\n      <div class=\"header-left\">\n        <h1>Seismic Analysis Report</h1>\n        <p class=\"subtitle\">${PROJECT_TITLE}</p>\n        <p class=\"author-info\">Prepared by: ${AUTHOR_NAME}<br/>Date: ${currentDate}</p>\n      </div>\n      <div class=\"header-right\">\n        <img src=\"/app/oq-wrappers/logo.png\" alt=\"Logo\" class=\"logo\" />\n      </div>\n    </header>\n\n    <h2>Model Description</h2>\n    ${modelDescription}\n\n    <h2>Textual Calculation Results</h2>\n    <pre>${reportText}</pre>\n\n    <!-- Les sections \"Plot\" et \"Interpretation\" sont volontairement omises -->\n\n    <div class=\"appendix\">\n        <h2>Appendix: Term Definitions</h2>\n        <div class=\"description_definitions\">${definitionsHtml.replace(/\\n/g, '<br>')}</div>\n        ${aiCreditText}\n    </div>\n    \n  </body>\n</html>\n`; // <-- FIN DE LA CHAÎNE HTML\n\n// --- PARTIE 3: RETOUR ---\nreturn [{\n  json: {\n    ...mergedData,\n    report_html: finalHtml\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5104,
+        1488
+      ],
+      "id": "d530ef3c-9bec-40a4-bf6f-4ee0c741ef34",
+      "name": "Code9"
+    },
+    {
+      "parameters": {
+        "command": "=weasyprint \"{{ $json.temp_html_path }}\" \"{{ $json.final_pdf_path }}\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5504,
+        1488
+      ],
+      "id": "1c45eba4-87e6-4087-ba84-3518db968d0f",
+      "name": "Execute Command1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\n\n// ON VA CHERCHER LE CONTENU HTML DIRECTEMENT DANS LE NOEUD \"Code5\"\nconst htmlContent = $('Code9').first().json.report_html;\n\n// =======================================================================\n// MODIFICATION : Définir les chemins de fichiers FIXES\n// On a supprimé la variable \"timestamp\" pour que les noms soient toujours les mêmes.\n// =======================================================================\nconst tempHtmlPath = '/app/oq-wrappers/temp_report.html';\nconst finalPdfPath = '/app/oq-wrappers/final_report.pdf';\n\n// On vérifie que le contenu n'est pas vide avant d'écrire\nif (htmlContent) {\n  // fs.writeFileSync() va automatiquement écraser le fichier temp_report.html précédent.\n  fs.writeFileSync(tempHtmlPath, htmlContent);\n}\n\n// On retourne les chemins de fichiers fixes pour que les noeuds suivants puissent les utiliser\nreturn [{\n  json: {\n    ...$input.first().json, // On passe les données d'entrée (de l'IA) au noeud suivant\n    temp_html_path: tempHtmlPath,\n    final_pdf_path: finalPdfPath \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5296,
+        1488
+      ],
+      "id": "c7eadbf6-9707-4636-b74d-d2499291979f",
+      "name": "Code10"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Code10').item.json.final_pdf_path }}",
+        "options": {
+          "fileName": "=final_report_{{ $('Code3').item.json.class_name }}.pdf",
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        5776,
+        1488
+      ],
+      "id": "eb19e12f-182b-4716-9f6f-ce76900a3a49",
+      "name": "Read/Write Files from Disk1",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- ÉTAPE 1: RÉCUPÉRER LES DONNÉES AUX BONNES SOURCES ---\n\n// On récupère les résultats du calcul DEPUIS LE NOEUD Code7\nconst calculationResult = $('Code15').first().json;\n\n// --- ÉTAPE 2: EXTRAIRE LES INFORMATIONS UTILES ---\n\n// On s'assure que les variables existent, sinon on met une valeur par défaut\nconst reportText = calculationResult.final_report || \"Calculation report not found.\";\nconst plotPath = calculationResult.plot_path || null;\n\n\n// --- ÉTAPE 3: RETOURNER UN OBJET STRUCTURÉ POUR LE NOEUD Code5 ---\n// On retourne toutes les pièces séparément pour que Code5 puisse les utiliser.\nreturn [{\n  json: {\n    final_report: reportText,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4592,
+        1504
+      ],
+      "id": "bd0ecd06-8f2a-466d-8bff-b81076c3fac6",
+      "name": "Code11"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $('Code1').item.json.final_report }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4720,
+        1184
+      ],
+      "id": "307deca7-4a92-4252-9048-5734fa07dada",
+      "name": "Send a text message2",
+      "webhookId": "5fb91305-4093-4637-96f7-9996c344ec01",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        304
+      ],
+      "id": "e3dcccd0-8910-4591-9b10-f3b189a805a5",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Nsa5k408T4t6cfNX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "notes": "⚠️ The AI analysis service (Gemini) is temporarily overloaded. The main calculation was successful, but the AI-powered sections (definitions) could not be generated at this time. Please try again later"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code12 : Préparation du Prompt \"Expert Contextuel\"\n// =======================================================================\n\n// --- ÉTAPE 1: LIRE TOUTES LES DONNÉES DE CONTEXTE ---\nconst code3Output = $('Code3').item.json;\nconst physicalParams = [...code3Output.requires.site, ...code3Output.requires.rupture, ...code3Output.requires.distance];\nconst intensityMeasures = code3Output.supported_imts;\nconst gmmName = code3Output.class_name;\nconst gmmAbstract = code3Output.abstract;\n\nconst knowledgeBaseItems = $('Get row(s) in sheet2').all();\n\n// --- ÉTAPE 2: FORMATER LA BASE DE CONNAISSANCES POUR LE PROMPT ---\nconst knowledgeBaseMarkdown = knowledgeBaseItems.map(item => {\n    const i = item.json;\n    return `| ${i.Name} | ${i.Category} | ${i.Description} | ${i.Unit} | ${i['Usual Range']} |`;\n}).join('\\n');\nconst knowledgeBaseForPrompt = `\n| Name | Category | Description | Unit | Usual Range |\n| :--- | :--- | :--- | :--- | :--- |\n${knowledgeBaseMarkdown}\n`;\n\n// --- ÉTAPE 3: CONSTRUIRE LE PROMPT FINAL ---\nlet promptText = \"\";\nif (physicalParams.length > 0 || intensityMeasures.length > 0) {\n  promptText = `\nYou are an expert seismologist and geophysicist. Your task is to act as a data enrichment specialist.\n\n**YOUR METHODOLOGY IS MANDATORY:**\n\n1.  **Primary Source of Truth:** You MUST use the following Markdown table as your exclusive knowledge base to get the base \"definition\", \"unit\", and \"range\".\n    \\`\\`\\`markdown\n    ${knowledgeBaseForPrompt}\n    \\`\\`\\`\n\n2.  **Expert Enrichment Task:** For the \"typical_range\" of each parameter, your main task is to add expert context. Based on your knowledge of seismology, explain in a short sentence (in English) the physical meaning of the minimum and maximum values of the range.\n\n**YOUR TASK:**\nFor the lists below, find each term in the knowledge base and create a JSON object for it, enriching the \"typical_range\" as instructed.\n\n*   **Physical Parameters to define:** ${physicalParams.join(', ')}\n*   **Intensity Measures to define:** ${intensityMeasures.join(', ')}\n\n**Strict JSON Output Format:**\nYour output MUST be a single, valid JSON object. Do not add any text before or after it. The \"typical_range\" key must contain a nested object.\n\n**Example of the desired JSON output structure for d_sigma:**\n{\n  \"physical_parameters\": [\n    {\n      \"parameter\": \"d_sigma\",\n      \"definition\": \"Stress Drop. A parameter describing the stress reduction on the fault during an earthquake.\",\n      \"unit\": \"bar\",\n      \"typical_range\": {\n        \"range\": \"30 to 300\",\n        \"min_context_en\": \"A low stress drop (~30 bar) implies more low-frequency content (longer waves, slower movements).\",\n        \"max_context_en\": \"A high stress drop (~300 bar) implies a spectrum richer in high frequencies (fast waves, stronger and shorter shaking).\"\n      }\n    }\n  ],\n  \"intensity_measures\": [ ... ]\n}\n`;\n} else {\n  promptText = \"No parameters or IMTs were provided to define.\";\n}\n\n// --- ÉTAPE 4: RETOURNER LA REQUÊTE COMPLÈTE POUR L'API GEMINI ---\nreturn {\n  json: { \"contents\": [ { \"parts\": [ { \"text\": promptText } ] } ] }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        320
+      ],
+      "id": "0ea1626b-8696-440b-ac91-bd56a59c5f68",
+      "name": "Code12"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.formatted_text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3056,
+        -192
+      ],
+      "id": "010af580-493e-4c6d-a6b7-56f4839aaa98",
+      "name": "Send a text message4",
+      "webhookId": "4c1087d2-b50a-473a-9df6-b27d2ed5ea9f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code13 : Formatage des Définitions Enrichies en HTML pour Telegram\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER ET NETTOYER LA RÉPONSE BRUTE DE L'IA ---\nlet rawTextFromAI = \"\";\ntry {\n  rawTextFromAI = $input.first().json.candidates[0].content.parts[0].text;\n} catch (e) {\n  return [{ json: { formatted_text: \"<b>Error:</b> Could not retrieve definitions from AI response.\", parse_mode: \"HTML\" } }];\n}\n\nconst cleanedJsonString = rawTextFromAI.replace(/```json/g, '').replace(/```/g, '').trim();\n\n// --- ÉTAPE 2: PARSER LE JSON ET LE TRANSFORMER EN TEXTE HTML LISIBLE ---\nlet formattedMessage = \"\";\ntry {\n  const definitions = JSON.parse(cleanedJsonString);\n\n  const escapeHtml = (text) => {\n    if (!text) return '';\n    return text.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n  };\n\n  const textBlocks = [];\n\n  // On formate la section des paramètres physiques en HTML\n  if (definitions.physical_parameters && definitions.physical_parameters.length > 0) {\n    textBlocks.push(`<b><u>Physical Parameters:</u></b>`);\n    definitions.physical_parameters.forEach(def => {\n      const parameter = `<b>${escapeHtml(def.parameter)}</b>`;\n      const definition = `Definition: ${escapeHtml(def.definition)}`;\n      const unit = `Unit: ${escapeHtml(def.unit)}`;\n      \n      // Bloc de code intelligent pour le typical_range\n      let typical_range = \"<b>Typical Range:</b> Not available\";\n      if (typeof def.typical_range === 'object' && def.typical_range !== null) {\n        typical_range = `<b>Typical Range:</b> ${escapeHtml(def.typical_range.range)}\\n  - <i>Min Context:</i> ${escapeHtml(def.typical_range.min_context_en)}\\n  - <i>Max Context:</i> ${escapeHtml(def.typical_range.max_context_en)}`;\n      } else if (def.typical_range) {\n        typical_range = `<b>Typical Range:</b> ${escapeHtml(def.typical_range)}`;\n      }\n      \n      textBlocks.push([parameter, definition, unit, typical_range].join('\\n'));\n    });\n  }\n\n  // On formate la section des IMTs en HTML\n  if (definitions.intensity_measures && definitions.intensity_measures.length > 0) {\n    textBlocks.push(`\\n<b><u>Intensity Measure Types (IMTs):</u></b>`);\n    definitions.intensity_measures.forEach(def => {\n      const parameter = `<b>${escapeHtml(def.parameter)}</b>`;\n      const definition = `Definition: ${escapeHtml(def.definition)}`;\n      const unit = `Unit: ${escapeHtml(def.unit)}`;\n\n      // On applique la même logique ici pour les IMTs\n      let typical_range = \"<b>Typical Range:</b> Not available\";\n      if (typeof def.typical_range === 'object' && def.typical_range !== null) {\n        typical_range = `<b>Typical Range:</b> ${escapeHtml(def.typical_range.range)}\\n  - <i>Min Context:</i> ${escapeHtml(def.typical_range.min_context_en)}\\n  - <i>Max Context:</i> ${escapeHtml(def.typical_range.max_context_en)}`;\n      } else if (def.typical_range) {\n        typical_range = `<b>Typical Range:</b> ${escapeHtml(def.typical_range)}`;\n      }\n      \n      textBlocks.push([parameter, definition, unit, typical_range].join('\\n'));\n    });\n  }\n  \n  formattedMessage = textBlocks.join('\\n\\n');\n\n} catch (e) {\n  formattedMessage = \"<b>Error:</b> The AI did not return a valid JSON format. Raw response:\\n\\n\" + cleanedJsonString;\n}\n\n// --- ÉTAPE 3: RETOURNER LE TEXTE FINAL ET LE MODE DE PARSING HTML ---\nreturn [{\n  json: {\n    formatted_text: formattedMessage,\n    parse_mode: 'HTML' \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        288
+      ],
+      "id": "ac228465-735a-49b4-ad95-2c5cb92e2ca3",
+      "name": "Code13"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD : Création du Fichier de Données CSV (Version avec DRVT)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LES DONNÉES DEPUIS L'ENTRÉE ---\nconst inputData = $input.first().json;\n\nif (!inputData.stdout || !inputData.final_command) {\n    throw new Error(\"Les données du noeud précédent sont incomplètes ou manquantes.\");\n}\n\nconst result = JSON.parse(inputData.stdout);\nconst imtResults = result.imt_results || [];\n\n// --- ÉTAPE 2: FILTRER LES RÉSULTATS PAR TYPE DE DONNÉES SPECTRALES ---\nconst saResults = imtResults.filter(r => r.imt === 'SA' && r.success);\nconst avgSaResults = imtResults.filter(r => r.imt === 'AvgSA' && r.success);\nconst sdiResults = imtResults.filter(r => r.imt === 'SDi' && r.success);\nconst fasResults = imtResults.filter(r => r.imt === 'FAS' && r.success);\nconst easResults = imtResults.filter(r => r.imt === 'EAS' && r.success);\nconst drvtResults = imtResults.filter(r => r.imt === 'DRVT' && r.success); // ### AJOUTÉ ###\nconst vhrResults = imtResults.filter(r => r.imt && r.imt.startsWith('VHR_') && r.success);\n\nlet spectralData = [], headers = [], fileName = \"spectral_data.csv\";\n\n// --- ÉTAPE 3: DÉFINIR LES EN-TÊTES ET LE NOM DU FICHIER EN FONCTION DES DONNÉES TROUVÉES ---\nif (vhrResults.length > 0) {\n    spectralData = vhrResults;\n    headers = [\"Period (s)\", \"V/H Ratio\", \"StdDev (ln)\"];\n    fileName = `VHR_Data_${result.gmm}.csv`;\n} else if (avgSaResults.length > 0) {\n    spectralData = avgSaResults;\n    headers = [\"Period (s)\", \"Average Spectral Acceleration (g)\", \"StdDev (ln)\"];\n    fileName = `AvgSA_Data_${result.gmm}.csv`;\n} else if (saResults.length > 0) {\n    spectralData = saResults;\n    headers = [\"Period (s)\", \"Spectral Acceleration (g)\", \"StdDev (ln)\"];\n    fileName = `SA_Data_${result.gmm}.csv`;\n} else if (drvtResults.length > 0) { // ### AJOUTÉ ###\n    spectralData = drvtResults;\n    headers = [\"Frequency (Hz)\", \"Duration (s)\", \"StdDev (ln)\"];\n    fileName = `DRVT_Data_${result.gmm}.csv`;\n} else if (sdiResults.length > 0) {\n    spectralData = sdiResults;\n    headers = [\"Period (s)\", \"Inelastic Spectral Displacement (cm)\", \"StdDev (ln)\", \"Strength Ratio (R)\"];\n    fileName = `SDi_Data_${result.gmm}.csv`;\n} else if (fasResults.length > 0) {\n    spectralData = fasResults;\n    headers = [\"Frequency (Hz)\", \"Fourier Amplitude (g.s)\", \"StdDev (ln)\"];\n    fileName = `FAS_Data_${result.gmm}.csv`;\n} else if (easResults.length > 0) {\n    spectralData = easResults;\n    headers = [\"Frequency (Hz)\", \"Effective Amplitude Spectrum (cm/s)\", \"StdDev (ln)\"];\n    fileName = `EAS_Data_${result.gmm}.csv`;\n}\n\nif (spectralData.length === 0) {\n    console.log(\"Aucune donnée spectrale trouvée pour créer le fichier CSV.\");\n    return [{ json: { status: \"No spectral data found\" } }];\n}\n\n// --- ÉTAPE 4: CONSTRUIRE LE CONTENU DU FICHIER CSV ---\nconst csvRows = [];\nlet keys = [], values = [];\n\ntry {\n    const keysMatch = inputData.final_command.match(/--keys \"([^\"]+)\"/);\n    const valuesMatch = inputData.final_command.match(/--values \"([^\"]+)\"/);\n    if (keysMatch && keysMatch[1] && valuesMatch && valuesMatch[1]) {\n        keys = keysMatch[1].split(',');\n        values = valuesMatch[1].split(',');\n    }\n} catch (e) {\n    console.error(\"Impossible d'extraire les clés/valeurs depuis final_command\", e);\n}\n\ncsvRows.push([\"Physical Parameters:\"]);\nif (keys.length === values.length && keys.length > 0) {\n    for (let i = 0; i < keys.length; i++) {\n        csvRows.push([`${keys[i]}:`, values[i]]);\n    }\n} else {\n    csvRows.push([\"Could not extract parameters\"]);\n}\ncsvRows.push([]);\ncsvRows.push(headers);\n\n// Ajout des lignes de données\nspectralData.forEach(item => {\n    let row = [];\n    if (vhrResults.length > 0) {\n        row = [item.sa_period, item.mean_value, item.stddev_total_ln];\n    } else if (avgSaResults.length > 0) {\n        row = [item.sa_period, item.mean_value, item.stddev_total_ln];\n    } else if (saResults.length > 0) {\n        row = [item.sa_period, item.mean_value, item.stddev_total_ln];\n    } else if (drvtResults.length > 0) { // ### AJOUTÉ ###\n        row = [item.frequency, item.mean_value, item.stddev_total_ln];\n    } else if (sdiResults.length > 0) {\n        row = [item.sdi_period, item.mean_value, item.stddev_total_ln, item.strength_ratio];\n    } else if (fasResults.length > 0) {\n        row = [item.frequency, item.mean_value, item.stddev_total_ln];\n    } else if (easResults.length > 0) {\n        row = [item.frequency, item.mean_value, item.stddev_total_ln];\n    }\n    csvRows.push(row);\n});\n\nconst csvContent = csvRows.map(row => row.join(',')).join('\\n');\n\n// --- ÉTAPE 5: CONVERTIR LE CSV EN FICHIER BINAIRE ET LE RETOURNER ---\nconst fileBuffer = Buffer.from(csvContent, 'utf-8');\n\nreturn [{\n    binary: {\n        data: {\n            data: fileBuffer.toString('base64'),\n            fileName: fileName,\n            mimeType: 'text/csv'\n        }\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5008,
+        304
+      ],
+      "id": "bda1d498-2e26-4679-be33-28b2915c5923",
+      "name": "Code14"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4464,
+        304
+      ],
+      "id": "4d04c53c-71a0-4565-9a20-ea15665d7da1",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        6464,
+        528
+      ],
+      "id": "81ab3ee3-da6e-4395-8ad9-c7b5d3cdae09",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2605731f-da15-4f17-a440-ecc307fea453",
+              "leftValue": "={{ parseInt($json.data.text) }}",
+              "rightValue": "={{ $('Code22').all().length }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "97a5ac66-f103-4c82-bf78-439662d8ea16",
+              "leftValue": "={{ isNaN(parseInt($json.data.text)) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e11346f9-6139-441f-82ff-226ffe8bdca6",
+              "leftValue": "={{ parseInt($json.data.text) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3472,
+        -688
+      ],
+      "id": "a56ea117-b405-473b-abcd-c924ad4b40d9",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "=⚠️ Invalid input: '{{ $json.data.text }}'\n\nPlease enter a valid **number** from the list.\n\nThe number must be between **1** and **{{ $('Code22').all().length }}**.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3984,
+        -560
+      ],
+      "id": "57999e0d-c7af-487a-b1bb-0a930053f00e",
+      "name": "Send a text message5",
+      "webhookId": "62ae9b34-1b35-4ac0-b9c8-bc8dd9239210",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "=⚠️ Invalid input: '{{ $('Send message and wait for response1').item.json.data[Object.keys($('Send message and wait for response1').item.json.data)[0]] }}'  Please provide {{ $('Code3').item.json.expected_param_count }} numerical values, separated by commas.  Example: `7,45,400`",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        1136
+      ],
+      "id": "724e246a-41ae-4059-85fa-2a9f25cd4409",
+      "name": "Send a text message6",
+      "webhookId": "dc668d6f-7e48-4912-b83c-2bab619a446a",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "Wait please",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        304
+      ],
+      "id": "add79814-60ef-453a-89b1-e80444417f65",
+      "name": "Send a text message7",
+      "webhookId": "74a0f0f5-9bb4-4723-8eb0-350227a0ee7a",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        5504,
+        1040
+      ],
+      "id": "1a3fba3a-4c75-4a76-b2e7-e7ab025d0bea",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4912,
+        1488
+      ],
+      "id": "784f0c77-f409-4dc1-aad2-35ef96f1b683",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1898443251,
+          "mode": "list",
+          "cachedResultName": "REQUIRES_IMTs_desc_units",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4/edit#gid=1898443251"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        304
+      ],
+      "id": "3452021f-cf24-47c6-91e5-acfd50d5a8a5",
+      "name": "Get row(s) in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wPxE5VAtJAOFnobz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        6144,
+        1584
+      ],
+      "id": "ca67d81c-5573-4cc9-862e-70d15ec455dd",
+      "name": "Send a document2",
+      "webhookId": "1494fd77-ed95-4d7e-90cb-cb36bb9b9c3c",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "={{ $('Prepare Final Command1').item.json.final_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3808,
+        1376
+      ],
+      "id": "19eab75d-f8e0-407c-99a4-35ebb8203475",
+      "name": "Run Final Calculation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code1 : Agrégateur de Rapports (Version avec Résumé Intelligent)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LES DONNÉES DE MANIÈRE SÉCURISÉE ---\n\nconst calcData = $('Run Final Calculation').first()?.json;\nconst interpretationText = $input.first()?.json.response || \"\";\n\nif (!calcData || !calcData.stdout) {\n  throw new Error(\"Les données du noeud 'Run Final Calculation1' sont manquantes ou invalides.\");\n}\nconst result = JSON.parse(calcData.stdout);\n\n// --- ÉTAPE 2: CONSTRUIRE LE RAPPORT TEXTUEL DE MANIÈRE DÉFENSIVE ---\n\nlet message = `🏗️ GMM_class Calculation: ${result.gmm || 'N/A'}\\n\\n`;\nmessage += `📊 Abstract:\\n`;\nmessage += `• Module: ${result.module || 'N/A'}\\n`;\n\n// CORRECTION : Récupération des Physical Parameters depuis Final_Command1\ntry {\n  // Récupérer les données du nœud \"Prepare Final Command1\"\n  const finalCommandData = $('Prepare Final Command1').first()?.json?.final_command;\n  \n  if (finalCommandData && typeof finalCommandData === 'string') {\n    console.log(\"Commande final_command:\", finalCommandData);\n    \n    message += '• Physical Parameters:\\n';\n    \n    // Extraire les --keys et --values de la commande\n    const keysMatch = finalCommandData.match(/--keys\\s+\"([^\"]+)\"/);\n    const valuesMatch = finalCommandData.match(/--values\\s+\"([^\"]+)\"/);\n    \n    if (keysMatch && valuesMatch) {\n      // Extraire et nettoyer les keys et values\n      const keysString = keysMatch[1];\n      const valuesString = valuesMatch[1];\n      \n      console.log(\"Keys trouvées:\", keysString);\n      console.log(\"Values trouvées:\", valuesString);\n      \n      // Séparer par virgules et nettoyer\n      const keys = keysString.split(',').map(k => k.trim());\n      const values = valuesString.split(',').map(v => v.trim());\n      \n      // Vérifier que nous avons le même nombre de clés et de valeurs\n      if (keys.length === values.length) {\n        for (let i = 0; i < keys.length; i++) {\n          message += `  - ${keys[i]} = ${values[i]}\\n`;\n        }\n      } else {\n        // Si mismatch, afficher séparément\n        message += `  - Keys: ${keys.join(', ')}\\n`;\n        message += `  - Values: ${values.join(', ')}\\n`;\n        console.warn(\"Mismatch entre le nombre de keys et values\");\n      }\n    } else {\n      // Fallback: essayer d'extraire d'autres paramètres de la commande\n      message += '  - Command parameters:\\n';\n      \n      // Extraire le module\n      const moduleMatch = finalCommandData.match(/--module\\s+(\\S+)/);\n      if (moduleMatch) {\n        message += `    - module = ${moduleMatch[1]}\\n`;\n      }\n      \n      // Extraire le class_name\n      const classMatch = finalCommandData.match(/--class_name\\s+(\\S+)/);\n      if (classMatch) {\n        message += `    - class_name = ${classMatch[1]}\\n`;\n      }\n      \n      // Si on n'a pas trouvé keys/values, les chercher sans guillemets\n      const keysMatchAlt = finalCommandData.match(/--keys\\s+(\\S+)/);\n      const valuesMatchAlt = finalCommandData.match(/--values\\s+(\\S+)/);\n      \n      if (keysMatchAlt && valuesMatchAlt) {\n        const keys = keysMatchAlt[1].replace(/\"/g, '').split(',').map(k => k.trim());\n        const values = valuesMatchAlt[1].replace(/\"/g, '').split(',').map(v => v.trim());\n        \n        if (keys.length === values.length) {\n          for (let i = 0; i < keys.length; i++) {\n            message += `    - ${keys[i]} = ${values[i]}\\n`;\n          }\n        }\n      }\n    }\n  } else {\n    message += '• Physical Parameters: (final_command not found or not a string)\\n';\n    console.log(\"Structure du nœud:\", $('Prepare Final Command1').first()?.json);\n  }\n} catch (e) {\n  message += '• Physical Parameters: (error parsing final_command)\\n';\n  console.error(\"Erreur lors du parsing de final_command:\", e);\n  console.error(\"Données disponibles:\", $('Prepare Final Command1').first()?.json);\n}\n\nmessage += `• Numbers of IMs supported by model: ${result.successful_imts_count || 0}/${result.total_imts_tested || 0}\\n`;\n\nconst imtResults = result.imt_results || [];\n\n// On affiche TOUS les résultats scalaires réussis\nconst baseImts = imtResults.filter(r => !['SA', 'SDi'].includes(r.imt) && r.success);\nif (baseImts.length > 0) {\n    message += `\\n📈 Base IMTs (successful):\\n`;\n    baseImts.forEach(imt => {\n        const meanValue = imt.mean_value !== null ? parseFloat(imt.mean_value).toFixed(4) : 'N/A';\n        const stdDev = imt.stddev_total_ln !== null ? parseFloat(imt.stddev_total_ln).toFixed(4) : 'N/A';\n        const unit = imt.unit || '';\n        message += `• ${imt.display_name}: ${meanValue}${unit} (σ=${stdDev})\\n`;\n    });\n}\n\n// =======================================================================\n// === MODIFICATION : CRÉATION D'UN RÉSUMÉ SPECTRAL INTELLIGENT ===\n// =======================================================================\n// Cette fonction sélectionne les données spectrales les plus pertinentes\nfunction getSpectralSummary(spectralResults, type) {\n    if (!spectralResults || spectralResults.length === 0) return \"\";\n\n    let summary = `\\n🌊 ${type} Spectrum Summary (Sampled Values):\\n`;\n    const periodKey = type === 'SA' ? 'sa_period' : 'sdi_period';\n    const unit = type === 'SA' ? 'g' : 'cm';\n    \n    // Périodes clés à extraire (courtes, intermédiaires, longues)\n    const key_periods = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0];\n    let sampled_results = [];\n    \n    // Trier les résultats par période\n    spectralResults.sort((a, b) => a[periodKey] - b[periodKey]);\n\n    // Pour chaque période clé, trouver le résultat le plus proche\n    for (const period of key_periods) {\n        const closest = spectralResults.reduce((prev, curr) => \n            Math.abs(curr[periodKey] - period) < Math.abs(prev[periodKey] - period) ? curr : prev\n        );\n        sampled_results.push(closest);\n    }\n    \n    // Éliminer les doublons et s'assurer qu'on n'a pas trop de lignes\n    const unique_results = Array.from(new Map(sampled_results.map(item => [item.display_name, item])).values()).slice(0, 6);\n\n   for (const item of unique_results) {\n        summary += `  ${item.display_name}: ${parseFloat(item.mean_value).toFixed(4)}${unit} (σ=${item.stddev_total_ln})\\n`;\n    }\n    return summary;\n}\n\nconst saResults = imtResults.filter(r => r.imt === 'SA' && r.success);\nconst sdiResults = imtResults.filter(r => r.imt === 'SDi' && r.success);\n\nif (saResults.length > 0) {\n    message += getSpectralSummary(saResults, 'SA');\n} else if (sdiResults.length > 0) {\n    message += getSpectralSummary(sdiResults, 'SDi');\n}\n\nmessage += '\\n';\n\nif (result.failed_imts_count > 0) {\n    message += `⚠️ ${result.failed_imts_count} IMTs not supported.\\n\\n`;\n}\n\n// --- ÉTAPE 3: RETOURNER TOUTES LES DONNÉES AGRÉGÉES ---\nreturn [{\n    json: {\n        final_report: message,\n        interpretation_text: interpretationText,\n        has_plot: !!result.plot_path,\n        plot_path: result.plot_path || null,\n        sa_count: saResults.length,\n        sdi_count: sdiResults.length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4064,
+        1504
+      ],
+      "id": "f09942ee-0bd0-48fa-8bda-92cbfbe727a9",
+      "name": "Code15"
+    },
+    {
+      "parameters": {
+        "operation": "sendAnimation",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "file": "={{ $('Select Random GIF').item.json.selected_gif_url }}",
+        "additionalFields": {
+          "caption": "=Thank you. Your parameters have been validated. ⏳ Calculation in progress, please wait a moment...This may take several seconds."
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2464,
+        784
+      ],
+      "id": "4c479c4a-601c-41bf-a6fb-18f1db8059f7",
+      "name": "Send an animated file",
+      "webhookId": "0bc7a126-85e0-4a39-9da8-de80e46b02b2",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD : Sélection d'un GIF Aléatoire\n// =======================================================================\n\n// On définit une liste de plusieurs URLs de GIFs sur le thème de la sismologie\nconst gifList = [\n  'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExdmVxcXB5dzRwY3dhN25paGxvbm4zaTh0aGMwaXNqNjMzNjAwb3JhayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uh83ZDjeoz6KNmlXo3/giphy.gif',\n'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTZuZjRoY3FwY3lnNGN0NTJjaXFjYTNydWJsbHBkZ3g1N2U5cDFkdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2xFxnBPfC9J4QrinEm/giphy.gif',  'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3M3MHo1M3FwaHoycTF4NzNlNDdtbmxjbzN1emQwZnVvbmtvaGNsciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/52np4aVI6Ov4G2Rn3g/giphy.gif',  'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3djlscWtyeDQ0eW0xdDB4bHNlbmI0Mm5vNXRiMjd4M3piZXFweGhzMiZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/4AO3GUs6BxrCKGQwQ4/giphy.gif',   'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHZib2dneDZrMjJjNjFuanVkazB4bjh3bjUxYmY2YWprNmVxdDN5cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/f7eeMx6iRVzRDZX8J4/giphy.gif',  'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3N3Uzc3pmMHIycGw5aXAycjM0YXNxMDBmeWx4ZmcxaDNhd3U3dmw5NiZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NHeVvxjK4ywhZ4gHwJ/giphy.gif', \n'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bmFmODQ3ajMxMGdnNTN2czNuZDRmdGhoaW01ZmRvM3Y2aW5jcHNscSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/PndoNmVnSsC1NERrHO/giphy.gif',\n'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3c3o0eDg4ajQzemt1cWhwMnpxMmV5aGdmaGswbmZ3ZDA2MWF0M25iYyZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/KeXLnU2IgJhha0TUCv/giphy.gif'\n  ];\n\n// On choisit un index aléatoire dans la liste\nconst randomIndex = Math.floor(Math.random() * gifList.length);\n\n// On sélectionne l'URL correspondante\nconst randomGifUrl = gifList[randomIndex];\n\n// On retourne l'URL choisie pour que le noeud suivant puisse l'utiliser\nreturn {\n  json: {\n    ...$input.first().json, // On conserve les données d'entrée\n    selected_gif_url: randomGifUrl\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        784
+      ],
+      "id": "17cffe5e-98a1-48c4-be3f-c826793f712e",
+      "name": "Select Random GIF"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code16 : Formatage CONCIS des Paramètres Physiques pour Telegram\n// =======================================================================\nlet rawTextFromAI = \"\";\ntry {\n  // Chemin d'accès corrigé et robuste\n  rawTextFromAI = $input.first().json.candidates[0].content.parts[0].text;\n} catch (e) {\n  return [{ json: { formatted_text: \"<b>Error:</b> Could not retrieve the AI response.\", parse_mode: \"HTML\" } }];\n}\nconst cleanedJsonString = rawTextFromAI.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\nlet formattedMessage = \"\";\ntry {\n  const definitions = JSON.parse(cleanedJsonString);\n  const escapeHtml = (text) => text ? text.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';\n  \n  // On ne traite que la section des paramètres physiques\n  if (definitions.physical_parameters && definitions.physical_parameters.length > 0) {\n    const textBlocks = [];\n    textBlocks.push(`<b><u>Physical Parameters:</u></b>`);\n    definitions.physical_parameters.forEach(def => {\n      let rangeText = \"<b>Typical Range:</b> Not available\";\n      if (typeof def.typical_range === 'object' && def.typical_range !== null) {\n        rangeText = `<b>Typical Range:</b> ${escapeHtml(def.typical_range.range)}`;\n      } else if (def.typical_range) {\n        rangeText = `<b>Typical Range:</b> ${escapeHtml(def.typical_range)}`;\n      }\n      const block = `<b>${escapeHtml(def.parameter)}</b>\\nDefinition: ${escapeHtml(def.definition)}\\nUnit: ${escapeHtml(def.unit)}\\n${rangeText}`;\n      textBlocks.push(block);\n    });\n    formattedMessage = textBlocks.join('\\n\\n');\n  } else {\n    return []; // Pas de paramètres, on n'envoie rien.\n  }\n} catch (e) {\n  formattedMessage = \"<b>Error:</b> The AI did not return a valid JSON format (Physical Parameters part).\";\n}\nreturn [{\n  json: {\n    formatted_text: formattedMessage,\n    parse_mode: 'HTML' \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        -192
+      ],
+      "id": "8b85c339-6163-4cbe-8b84-1f564c09e34e",
+      "name": "Code16"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code17 : Formatage des Définitions - INTENSITY MEASURE TYPES (Corrigé)\n// =======================================================================\n\nlet rawTextFromAI = \"\";\ntry {\n  rawTextFromAI = $input.first().json.candidates[0].content.parts[0].text;\n} catch (e) {\n  return [{ json: { formatted_text: \"<b>Error:</b> Could not retrieve AI response.\", parse_mode: \"HTML\" } }];\n}\n\n// =======================================================================\n// === MODIFICATION : MÉTHODE DE NETTOYAGE ROBUSTE ===\n// =======================================================================\n// On trouve le premier '{' et le dernier '}' pour extraire le JSON pur.\nconst firstBrace = rawTextFromAI.indexOf('{');\nconst lastBrace = rawTextFromAI.lastIndexOf('}');\nconst cleanedJsonString = (firstBrace !== -1 && lastBrace !== -1) \n    ? rawTextFromAI.substring(firstBrace, lastBrace + 1) \n    : \"\";\n\nlet formattedMessage = \"\";\ntry {\n  // On s'assure qu'on a bien trouvé un JSON avant de parser\n  if (!cleanedJsonString) {\n      throw new Error(\"No JSON object found in AI response.\");\n  }\n  const definitions = JSON.parse(cleanedJsonString);\n  const escapeHtml = (text) => text ? text.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';\n\n  if (definitions.intensity_measures && definitions.intensity_measures.length > 0) {\n    const textBlocks = [];\n    textBlocks.push(`<b><u>Intensity Measure Types (IMTs):</u></b>`);\n    definitions.intensity_measures.forEach(def => {\n      let rangeText = \"<b>Typical Range:</b> Not available\";\n      if (typeof def.typical_range === 'object' && def.typical_range !== null) {\n        rangeText = `<b>Typical Range:</b> ${escapeHtml(def.typical_range.range)}`;\n      } else if (def.typical_range) {\n        rangeText = `<b>Typical Range:</b> ${escapeHtml(def.typical_range)}`;\n      }\n      const block = `<b>${escapeHtml(def.parameter)}</b>\\nDefinition: ${escapeHtml(def.definition)}\\nUnit: ${escapeHtml(def.unit)}\\n${rangeText}`;\n      textBlocks.push(block);\n    });\n    formattedMessage = textBlocks.join('\\n\\n');\n  } else {\n    return [];\n  }\n} catch (e) {\n  formattedMessage = \"<b>Error:</b> The AI did not return a valid JSON format (IMTs part). Raw response:\\n\\n\" + rawTextFromAI;\n}\n\nreturn [{\n  json: {\n    formatted_text: formattedMessage,\n    parse_mode: 'HTML' \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        64
+      ],
+      "id": "d9da4f84-ec54-4eab-800b-030bfb4815ba",
+      "name": "Code17"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.formatted_text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3280,
+        64
+      ],
+      "id": "3a269a96-ecf0-45a5-a87c-adf72a1fb6ee",
+      "name": "Send a text message",
+      "webhookId": "4c1087d2-b50a-473a-9df6-b27d2ed5ea9f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code2 : Formate la PREMIÈRE partie de la liste des GMMs (1-150)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LA LISTE FILTRÉE ---\n// On lit la sortie du nœud 'Code22' qui contient la VRAIE liste des items filtrés.\n// !! Assurez-vous que le nom 'Code22' est correct !!\nconst allFilteredItems = $('Code22').all();\n\n// --- ÉTAPE 2: SÉLECTIONNER LA PREMIÈRE PARTIE (les 150 premiers) ---\n// .slice(0, 150) prend les éléments de l'index 0 jusqu'à 149 (soit 150 éléments).\nconst firstBatch = allFilteredItems.slice(100, 200);\n\n// --- ÉTAPE 3: FORMATER LE MESSAGE ---\nconst title = ``;\nconst messageLines = [];\n\n// Expression régulière pour \"échapper\" les caractères spéciaux de Markdown V2\nconst specialChars = /[_*[\\]()~`>#+\\-=|{}.!]/g;\n\n// On boucle sur la PREMIÈRE PARTIE de la liste (les 150 items)\nfirstBatch.forEach((item, index) => {\n  // Le numéro de la ligne doit être l'index + 1\n  const newRowNumber = index + 101;\n  \n  // On récupère le nom de la classe et on échappe les caractères spéciaux\n  const className = (item.json.class_name || 'Unknown GMM').replace(specialChars, '\\\\$&');\n  \n  // On ajoute la ligne formatée au tableau\n  messageLines.push(`${newRowNumber}) ${className}`);\n});\n\n// On assemble le titre et les lignes du message.\nconst finalMessage = title + '\\n' + messageLines.join('\\n');\n\n// --- ÉTAPE 4: RETOURNER LE PREMIER MESSAGE ---\n// On retourne un seul item, contenant le message complet.\nreturn [{\n  json: {\n    telegramMessage: finalMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        -896
+      ],
+      "id": "d0aad7cb-aa80-4fd1-9bcf-0678f70a41d4",
+      "name": "Code18"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1552,
+        -896
+      ],
+      "id": "59e24978-6731-4136-8b5b-5bb22922702a",
+      "name": "Send GMMs List 1",
+      "webhookId": "56f971dd-fcd9-4180-95bf-b1aa536db25e",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1888,
+        -896
+      ],
+      "id": "1e9e4f96-4801-4de1-8ce5-1bffc3cd8c12",
+      "name": "Send GMMs List 2",
+      "webhookId": "56f971dd-fcd9-4180-95bf-b1aa536db25e",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code2 : Formate la PREMIÈRE partie de la liste des GMMs (1-150)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LA LISTE FILTRÉE ---\n// On lit la sortie du nœud 'Code22' qui contient la VRAIE liste des items filtrés.\n// !! Assurez-vous que le nom 'Code22' est correct !!\nconst allFilteredItems = $('Code22').all();\n\n// --- ÉTAPE 2: SÉLECTIONNER LA PREMIÈRE PARTIE (les 150 premiers) ---\n// .slice(0, 150) prend les éléments de l'index 0 jusqu'à 149 (soit 150 éléments).\nconst firstBatch = allFilteredItems.slice(200, 300);\n\n// --- ÉTAPE 3: FORMATER LE MESSAGE ---\nconst title = ``;\nconst messageLines = [];\n\n// Expression régulière pour \"échapper\" les caractères spéciaux de Markdown V2\nconst specialChars = /[_*[\\]()~`>#+\\-=|{}.!]/g;\n\n// On boucle sur la PREMIÈRE PARTIE de la liste (les 150 items)\nfirstBatch.forEach((item, index) => {\n  // Le numéro de la ligne doit être l'index + 1\n  const newRowNumber = index + 201;\n  \n  // On récupère le nom de la classe et on échappe les caractères spéciaux\n  const className = (item.json.class_name || 'Unknown GMM').replace(specialChars, '\\\\$&');\n  \n  // On ajoute la ligne formatée au tableau\n  messageLines.push(`${newRowNumber}) ${className}`);\n});\n\n// On assemble le titre et les lignes du message.\nconst finalMessage = title + '\\n' + messageLines.join('\\n');\n\n// --- ÉTAPE 4: RETOURNER LE PREMIER MESSAGE ---\n// On retourne un seul item, contenant le message complet.\nreturn [{\n  json: {\n    telegramMessage: finalMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        -896
+      ],
+      "id": "dc0aa809-a106-420d-8837-12514ca9f5ff",
+      "name": "Code19"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        -896
+      ],
+      "id": "35746c33-66c3-4310-a392-752307cd9879",
+      "name": "Send GMMs List ",
+      "webhookId": "56f971dd-fcd9-4180-95bf-b1aa536db25e",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code2 : Formate la PREMIÈRE partie de la liste des GMMs (1-150)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LA LISTE FILTRÉE ---\n// On lit la sortie du nœud 'Code22' qui contient la VRAIE liste des items filtrés.\n// !! Assurez-vous que le nom 'Code22' est correct !!\nconst allFilteredItems = $('Code22').all();\n\n// --- ÉTAPE 2: SÉLECTIONNER LA PREMIÈRE PARTIE (les 150 premiers) ---\n// .slice(0, 150) prend les éléments de l'index 0 jusqu'à 149 (soit 150 éléments).\nconst firstBatch = allFilteredItems.slice(300, 400);\n\n// --- ÉTAPE 3: FORMATER LE MESSAGE ---\nconst title = ``;\nconst messageLines = [];\n\n// Expression régulière pour \"échapper\" les caractères spéciaux de Markdown V2\nconst specialChars = /[_*[\\]()~`>#+\\-=|{}.!]/g;\n\n// On boucle sur la PREMIÈRE PARTIE de la liste (les 150 items)\nfirstBatch.forEach((item, index) => {\n  // Le numéro de la ligne doit être l'index + 1\n  const newRowNumber = index + 301;\n  \n  // On récupère le nom de la classe et on échappe les caractères spéciaux\n  const className = (item.json.class_name || 'Unknown GMM').replace(specialChars, '\\\\$&');\n  \n  // On ajoute la ligne formatée au tableau\n  messageLines.push(`${newRowNumber}) ${className}`);\n});\n\n// On assemble le titre et les lignes du message.\nconst finalMessage = title + '\\n' + messageLines.join('\\n');\n\n// --- ÉTAPE 4: RETOURNER LE PREMIER MESSAGE ---\n// On retourne un seul item, contenant le message complet.\nreturn [{\n  json: {\n    telegramMessage: finalMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2352,
+        -896
+      ],
+      "id": "c09e7ab3-7c15-45cf-9d10-777a3d77e006",
+      "name": "Code20"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2496,
+        -896
+      ],
+      "id": "578a408b-4629-45f0-a0f5-4197bdab38bf",
+      "name": "Send GMMs List 3",
+      "webhookId": "56f971dd-fcd9-4180-95bf-b1aa536db25e",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// On initialise une chaîne pour le message et un compteur pour la numérotation.\nlet message = \"*Here is the list of IMTs (Intensity Measure Type) available in OpenQuake*\\n\\n\";\nlet imtCounter = 0;\n\n// On récupère toutes les lignes du nœud précédent.\nconst items = $items();\n\n// On boucle sur chaque ligne (item) reçue.\nfor (const item of items) {\n  const rowData = item.json;\n\n  // --- LE FILTRE CLÉ EST ICI ---\n  // On vérifie si la colonne 'Category' est bien égale à 'IMT'.\n  // Assurez-vous que le nom 'Category' correspond exactement à votre en-tête de colonne.\n  if (rowData.Category === 'IMT') {\n    \n    // Si c'est un IMT, on incrémente notre compteur.\n    imtCounter++;\n\n    // On récupère le nom et la description de la ligne.\n    const name = rowData.Name;\n    const description = rowData.Description;\n\n    // On ajoute la ligne formatée au message en utilisant notre compteur.\n    message += `*${imtCounter}) ${name}:* ${description}\\n\\n`;\n  }\n}\n\n// On retourne l'objet final qui sera utilisé par le nœud Telegram.\nreturn {\n  json: {\n    telegramMessage: message\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -464
+      ],
+      "id": "3daf35d3-41b4-4917-a70f-beb09e5ad363",
+      "name": "Code21"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "message": "Specify the IMT (Intensity Measure type) number from the list by clicking on \"Respond\" and open :",
+        "responseType": "freeText",
+        "options": {
+          "responseFormDescription": "Specify the IMT (Intensity Measure type) number from the list :",
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        -464
+      ],
+      "id": "f3f17f67-8efe-4a71-a2b1-6067fdbc8cd8",
+      "name": "Send message and wait for response",
+      "webhookId": "b7b040ee-088a-47a6-9da8-f95246ce2698",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        -464
+      ],
+      "id": "ce6e889c-c9c3-4d65-b4df-db3ad74e7560",
+      "name": "Send a text message8",
+      "webhookId": "e2e675b3-ece5-4b89-94a9-b9678541ce25",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- NŒUD CODE22 : FILTRAGE DES CLASSES PAR IMT ---\n\n// 1. Récupérer le choix de l'utilisateur et toutes les données\n// Note: Assurez-vous que le nom du nœud 'Send message and wait for response' est correct.\nconst numeroIMTChoisi = parseInt($('Send message and wait for response').first().json.data.text, 10);\nconst allItems = $items(); // L'entrée de ce nœud doit être le Google Sheet \"Get row(s) in sheet3\"\n\n// 2. Liste de correspondance des IMT\n// --- LA CORRECTION EST ICI ---\n// J'ai ajouté la virgule manquante entre \"SA1\" et \"EAS\"\nconst imtMap = [\n  \"PGA\", \"PGV\", \"PGD\", \"SA\", \"IA\", \"CAV\", \"MMI\", \"RSD2080\", \"RSD575\",\n  \"RSD595\", \"FAS\", \"SDi\", \"LSD\",\"AvgSA\", \"JMA\", \"SA1\", \"EAS\", \"VHR_SA\", \"VHR_PGA\", \"VHR_PGV\", \"DRVT\"\n];\n\n// 3. Vérifications et récupération du nom de l'IMT\nif (isNaN(numeroIMTChoisi)) {\n  throw new Error(\"Impossible de lire le numéro de l'IMT choisi par l'utilisateur.\");\n}\nconst targetImtName = imtMap[numeroIMTChoisi - 1];\nif (!targetImtName) {\n  throw new Error(`Le numéro d'IMT '${numeroIMTChoisi}' est invalide.`);\n}\n\n// 4. Filtrer la liste pour ne garder que les items correspondants\nconst filteredItems = [];\nfor (const item of allItems) {\n  const rowData = item.json;\n  let found = false;\n  \n  // Cette boucle cherche bien dans les 5 colonnes\n  for (let i = 0; i < 5; i++) {\n    const columnName = `supported_imts.${i}`; \n    const imtValue = rowData[columnName];\n    if (imtValue && typeof imtValue === 'string' && imtValue.trim().toUpperCase() === targetImtName.toUpperCase()) {\n      found = true;\n      break; \n    }\n  }\n  \n  // Si trouvé, on ajoute l'item complet à notre nouvelle liste\n  if (found) {\n    filteredItems.push(item);\n  }\n}\n\n// 5. Retourner la LISTE DES ITEMS FILTRÉS\n// C'est la sortie correcte que le nœud 'Code3' attend.\nreturn filteredItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -464
+      ],
+      "id": "73f4650e-ff75-4133-a62a-403e4eb869df",
+      "name": "Code22"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 689534035,
+          "mode": "list",
+          "cachedResultName": "REQUIRES_IMTs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gQ1HQPXLJHm0VuncWnzEV8AA2LdNX51g25RNFjdPFT4/edit#gid=689534035"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        736,
+        -464
+      ],
+      "id": "a581c55e-f04c-4ea9-ae3c-dc21698c2924",
+      "name": "Get row(s) in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wPxE5VAtJAOFnobz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CE NŒUD PREND LA LISTE FILTRÉE ET LA TRANSFORME EN TEXTE ---\n\n// 1. Récupère les items filtrés qui arrivent du nœud Code22\nconst filteredItems = $items();\n\n// 2. Récupère le nom de l'IMT qui a été utilisé pour le filtre (pour un titre plus clair)\n// Assurez-vous que le nom du nœud ('Send message and wait for response') est correct.\nconst numeroIMTChoisi = parseInt($('Send message and wait for response').first().json.data.text, 10);\nconst imtMap = [\"PGA\", \"PGV\", \"PGD\", \"SA\", \"IA\", \"CAV\", \"MMI\", \"RSD2080\", \"RSD575\", \"RSD595\", \"FAS\", \"SDi\", \"LSD\", \"ASH\", \"AvgSA\", \"JMA\", \"SA1\", \"EAS\", \"VHR_SA\", \"VHR_PGA\", \"VHR_PGV\", \"DRVT\"];\nconst targetImtName = imtMap[numeroIMTChoisi - 1] || \"IMT inconnu\";\n\n// 3. Construit le message texte\nlet message;\n\nif (filteredItems.length === 0) {\n  message = `*Aucun modèle (classe) trouvé pour le calcul de : ${targetImtName}*`;\n} else {\n  message = `*Voici les ${filteredItems.length} classes qui supportent le calcul de ${targetImtName}. Veuillez répondre avec le numéro de votre choix :*\\n\\n`;\n  \n  // On boucle sur chaque item pour créer la liste numérotée\n  filteredItems.forEach((item, index) => {\n    const className = item.json.class_name;\n    // On ajoute la ligne formatée : \"1) `NomDeLaClasse`\"\n    message += `${index + 1}) \\`${className}\\`\\n`;\n  });\n}\n\n// 4. Retourne le message final dans la variable attendue\nreturn [{ \n  json: {\n    telegramMessage: message\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -464
+      ],
+      "id": "21d8437d-66d4-45d2-8bbc-59bb919ab078",
+      "name": "Code23"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =======================================================================\n// NŒUD Code2 : Formate la PREMIÈRE partie de la liste des GMMs (1-150)\n// =======================================================================\n\n// --- ÉTAPE 1: RÉCUPÉRER LA LISTE FILTRÉE ---\n// On lit la sortie du nœud 'Code22' qui contient la VRAIE liste des items filtrés.\n// !! Assurez-vous que le nom 'Code22' est correct !!\nconst allFilteredItems = $('Code22').all();\n\n// --- ÉTAPE 2: SÉLECTIONNER LA PREMIÈRE PARTIE (les 150 premiers) ---\n// .slice(0, 150) prend les éléments de l'index 0 jusqu'à 149 (soit 150 éléments).\nconst firstBatch = allFilteredItems.slice(400, 519);\n\n// --- ÉTAPE 3: FORMATER LE MESSAGE ---\nconst title = ``;\nconst messageLines = [];\n\n// Expression régulière pour \"échapper\" les caractères spéciaux de Markdown V2\nconst specialChars = /[_*[\\]()~`>#+\\-=|{}.!]/g;\n\n// On boucle sur la PREMIÈRE PARTIE de la liste (les 150 items)\nfirstBatch.forEach((item, index) => {\n  // Le numéro de la ligne doit être l'index + 1\n  const newRowNumber = index + 401;\n  \n  // On récupère le nom de la classe et on échappe les caractères spéciaux\n  const className = (item.json.class_name || 'Unknown GMM').replace(specialChars, '\\\\$&');\n  \n  // On ajoute la ligne formatée au tableau\n  messageLines.push(`${newRowNumber}) ${className}`);\n});\n\n// On assemble le titre et les lignes du message.\nconst finalMessage = title + '\\n' + messageLines.join('\\n');\n\n// --- ÉTAPE 4: RETOURNER LE PREMIER MESSAGE ---\n// On retourne un seul item, contenant le message complet.\nreturn [{\n  json: {\n    telegramMessage: finalMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        -896
+      ],
+      "id": "adaa0bf5-ac2c-4878-afd8-bcd247f79241",
+      "name": "Code24"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2816,
+        -896
+      ],
+      "id": "ef24cff3-9d2f-4365-8d5a-dafdfe2bfe2e",
+      "name": "Send GMMs List 4",
+      "webhookId": "56f971dd-fcd9-4180-95bf-b1aa536db25e",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2605731f-da15-4f17-a440-ecc307fea453",
+              "leftValue": "={{ $json.data.text }}",
+              "rightValue": "^\\d+$",
+              "operator": {
+                "type": "string",
+                "operation": "notRegex"
+              }
+            },
+            {
+              "id": "4e369d08-340f-4551-88f1-831614699265",
+              "leftValue": "={{ $json.data.text }}",
+              "rightValue": 21,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "4a8f4f05-9c7d-48c8-9d08-851395037934",
+              "leftValue": "={{ $json.data.text }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        -208
+      ],
+      "id": "2fbb57c3-fc29-43c1-9483-b39d50972ef5",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "=⚠️ Invalid input: '{{ $json.data.text }}'\n\nPlease enter a valid **number** from the list.\n\nThe number must be between **1** to **22**.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "62d139d3-5184-4cdc-99ad-78fb63885bce",
+      "name": "Send a text message9",
+      "webhookId": "62ae9b34-1b35-4ac0-b9c8-bc8dd9239210",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "876f7ed4-2282-4fe3-8879-93547166f26e",
+              "leftValue": "={{ Object.values($json.data)[0] }}",
+              "rightValue": "^-?[\\d.]+(,-?[\\d.]+)*$",
+              "operator": {
+                "type": "string",
+                "operation": "notRegex"
+              }
+            },
+            {
+              "id": "9c38c428-7ebc-43a3-b3fa-0945d0727798",
+              "leftValue": "={{ Object.values($json.data)[0].split(',').length }}",
+              "rightValue": "={{ $('Code3').item.json.expected_param_count }}",
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        832
+      ],
+      "id": "1a3add09-7327-4631-9dea-d594ee7b27ce",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "*Welcome to the OpenGSIM Bot!*  Here's how to get your Ground-motion Intensities Measures  calculations in a few simple steps:  \n1️⃣ *Choose your IMT* The bot will start by showing you a list of *21* supported Intensity Measure Types. Just reply with the number of the one you need (e.g., `5` for PGA).  \n2️⃣ *Select your GMM* Based on your selection, you'll receive a new list of compatible Ground Motion Models. Reply with the number of the model you wish to use.  \n3️⃣ *Enter your Physical Parameters* The bot will now ask for the specific physical parameters required by the model (e.g., `mag,rrup,vs30`). Reply with your values separated by commas (e.g., `7.0,50,400`).  \n4️⃣ *Get your Data & Report* That's it! The bot will perform the calculation and send you two files: - A *CSV data file* with all the raw IMT values. - A detailed *PDF report*, including a summary and an intelligent interpretation of the generated spectral curve.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -784,
+        -464
+      ],
+      "id": "12e7794d-ff23-4be5-bfcf-6806dc353813",
+      "name": "Send a text message10",
+      "webhookId": "42b64b85-187d-4b42-9d4d-abad75707abd",
+      "credentials": {
+        "telegramApi": {
+          "id": "2ncqXryGFeJ0AxXt",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -576,
+        -464
+      ],
+      "id": "817af8c3-3a67-406c-bf73-fa09d2953991",
+      "name": "Wait",
+      "webhookId": "05f9bd0e-49fe-4763-8768-793bc53cd7f2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choice of GMM": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response1": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Final Command1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Final Calculation1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Code7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Code11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code21",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Send GMMs List 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        [
+          {
+            "node": "required_parameters_struct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "required_parameters_struct": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a document": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Run Final Calculation1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run Final Calculation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code7": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code8": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code9": {
+      "main": [
+        [
+          {
+            "node": "Code10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code10": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Send a document2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code11": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send a text message2": {
+      "main": [
+        [
+          {
+            "node": "Code8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code13",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code16",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code17",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code12": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code13": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code14": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Send a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message5": {
+      "main": [
+        [
+          {
+            "node": "Choice of GMM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message6": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message7": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Code12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Final Calculation": {
+      "main": [
+        [
+          {
+            "node": "Code15",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code15": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a document2": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an animated file": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Random GIF": {
+      "main": [
+        [
+          {
+            "node": "Send an animated file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code16": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message4": {
+      "main": [
+        []
+      ]
+    },
+    "Code17": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code18": {
+      "main": [
+        [
+          {
+            "node": "Send GMMs List 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send GMMs List 1": {
+      "main": [
+        [
+          {
+            "node": "Code18",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send GMMs List 2": {
+      "main": [
+        [
+          {
+            "node": "Code19",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code19": {
+      "main": [
+        [
+          {
+            "node": "Send GMMs List ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send GMMs List ": {
+      "main": [
+        [
+          {
+            "node": "Code20",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code20": {
+      "main": [
+        [
+          {
+            "node": "Send GMMs List 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send GMMs List 3": {
+      "main": [
+        [
+          {
+            "node": "Code24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code21": {
+      "main": [
+        [
+          {
+            "node": "Send a text message8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message8": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet3": {
+      "main": [
+        [
+          {
+            "node": "Code22",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code22": {
+      "main": [
+        [
+          {
+            "node": "Code23",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code23": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code24": {
+      "main": [
+        [
+          {
+            "node": "Send GMMs List 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send GMMs List 4": {
+      "main": [
+        [
+          {
+            "node": "Choice of GMM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Send a text message9",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get row(s) in sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message9": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message10": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select Random GIF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Algiers",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "e4af6601-41b5-4422-88be-9df0f684c70e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1bdaf5b1a557d34c1f0c5af721cc3e6f93ba973f808c2bf2c8ff1845be26a4cd"
+  },
+  "id": "mpOFupoZ0g2Rsh4G",
+  "tags": []
+}
