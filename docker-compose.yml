@@ -1,0 +1,57 @@
+# =======================================================================
+# Docker-Compose.yml - Universal Version for Publication
+# =======================================================================
+# This file defines and orchestrates the two main services of the
+# OpenGSIM-Bot: the n8n workflow engine and the OpenQuake scientific core.
+
+version: '3.8'
+
+services:
+  # --- Service 1: The n8n Workflow Engine ---
+  n8n:
+    image: n8n-opgsim:latest
+    build:
+      context: .
+      dockerfile: n8n.Dockerfile
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      # Allows the 'Execute Command' node to run any command.
+      # CRITICAL: Only use in a trusted environment.
+      - N8N_EXECUTE_COMMAND_ALLOW_ALL=true
+      - EXECUTIONS_PROCESS=main
+      # Allows nodes to access built-in 'fs' module for file system operations.
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs
+      # Defines the webhook URL for the Telegram trigger.
+      # This should be set in the .env file.
+      - WEBHOOK_URL=${WEBHOOK_URL}
+    volumes:
+      # Persists n8n data (workflows, credentials) on the host machine.
+      - ./n8n_data:/home/node/.n8n
+      # Mounts the wrapper script directory into the n8n container.
+      # This allows the 'Execute Command' node to find and run the test script.
+      - ./openquake_wrapper:/app/openquake_wrapper
+    depends_on:
+      - openquake
+    networks:
+      - opengsim-net
+
+  # --- Service 2: The OpenQuake Scientific Core ---
+  openquake:
+    image: openquake-opgsim:latest
+    build:
+      context: ./openquake_wrapper
+      dockerfile: Dockerfile
+    restart: always
+    # We do not need to expose ports for this service as it is only
+    # accessed internally by the n8n 'Execute Command' node.
+    networks:
+      - opengsim-net
+
+networks:
+  opengsim-net:
+    driver: bridge
+
+volumes:
+  n8n_data:
